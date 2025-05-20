@@ -8,21 +8,24 @@ The output will be written into /output in the container. Bind to an appropriate
 As an alternative to binding, you can modify the container definition prior to building to use locations
 in $HOME or the current working directory as these should be automatically bound to the container.
 
+Instructions below assume that you have created a base directory which contains the repository,
+an output directory (e.g. phoronix/<node-identifier>), and an env directory (e.g. phoronix/env).
+
 BUILDING
 Use Apptainer to build the container. (It should also work in Singularity, but this is untested.)
 Root privileges should not be required.
 
-$ apptainer build --fakeroot uq-benchmark.sif /scratch/user/sbw/benchmark/uq-benchmark.def 2>&1 | tee build.out
+$ apptainer build --fakeroot uq-benchmark.sif hpcbench/uq-benchmark.def 2>&1 | tee build.out
 
 RUNNING
 Examples of how to install and run the tests:
 
 NVIDIA GPUs:
-$ apptainer run --bind /scratch/user/sbw/phoronix/h100sxm:/output --bind /scratch/user/sbw/phoronix/env:/phoronix-env --nv ./uq-benchmark.sif 
+$ apptainer run --bind ./phoronix/h100sxm:/output --bind ./phoronix/env:/phoronix-env --nv ./uq-benchmark.sif 
 
 AMD GPUs:
-$ apptainer run --bind /scratch/user/sbw/phoronix/h100sxm:/output --bind /scratch/user/sbw/phoronix/env:/phoronix-env --rocm ./uq-benchmark.sif 
+$ apptainer run --bind ./phoronix/h100sxm:/output --bind ./phoronix/env:/phoronix-env --rocm ./uq-benchmark.sif 
 
 CPU:
 (One of the tests is likely to fail due to lack of a device, this is expected)
-$ apptainer run --bind /scratch/user/sbw/phoronix/h100sxm:/output --bind /scratch/user/sbw/phoronix/env:/phoronix-env ./uq-benchmark.sif 
+$ apptainer run --bind ./phoronix/h100sxm:/output --bind ./phoronix/env:/phoronix-env ./uq-benchmark.sif 
