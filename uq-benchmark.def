@@ -1,0 +1,59 @@
+Bootstrap: docker
+From: ubuntu:noble-20250415.1
+
+%files
+	custom-tests /custom-tests
+
+%post
+	# Install PHP
+	export DEBIAN_FRONTEND=noninteractive
+	apt-get -y update
+	apt-get -y install php-cli php-gd unzip apt-utils mesa-utils php-xml git-core apt-file php-curl php-fpdf sudo
+	apt-get -y install build-essential autoconf cmake cmake-data python3-pip python3-yaml python3-venv
+	
+	# Option 1: Install test prerequisites – optional (will be prompted below otherwise)
+	apt-get -y install libopenblas-dev libopenblas64-dev libopenmpi-dev openmpi-bin libmpich-dev libfftw3-dev fftw-dev libboost-all-dev libasio-dev libboost-iostreams-dev libhdf5-dev libhdf5-mpi-dev libxml2-dev vulkan-tools libvulkan-dev spirv-tools
+
+	rm /usr/lib/python*/EXTERNALLY-MANAGED
+	mkdir /output
+	mkdir /phoronix-env
+	
+	git clone https://github.com/phoronix-test-suite/phoronix-test-suite.git
+	cd /phoronix-test-suite
+	git checkout tags/v10.8.4
+
+%environment
+	# Note that you need to bind this, or change this before building the container to somewhere in $HOME
+	export OUTPUT_DIR=/output
+	export TEST_RESULTS_NAME=uqbenchmark
+
+%runscript
+	# Alternative to user-config-set is to run the batch-setup interactively
+	#/phoronix-test-suite/phoronix-test-suite batch-setup
+	# Configure batch mode for user
+	/phoronix-test-suite/phoronix-test-suite user-config-set AnonymousUsageReporting=FALSE
+	/phoronix-test-suite/phoronix-test-suite user-config-set DynamicRunCount=FALSE
+	/phoronix-test-suite/phoronix-test-suite user-config-set OpenBrowser=FALSE
+	/phoronix-test-suite/phoronix-test-suite user-config-set UploadResults=FALSE
+	/phoronix-test-suite/phoronix-test-suite user-config-set PromptForTestIdentifier=FALSE
+	/phoronix-test-suite/phoronix-test-suite user-config-set PromptForTestDescription=FALSE
+	/phoronix-test-suite/phoronix-test-suite user-config-set PromptSaveName=FALSE
+	/phoronix-test-suite/phoronix-test-suite user-config-set RunAllTestCombinations=TRUE
+        /phoronix-test-suite/phoronix-test-suite user-config-set EnvironmentDirectory=/phoronix-env
+	/phoronix-test-suite/phoronix-test-suite user-config-set Configured=TRUE
+
+	/phoronix-test-suite/phoronix-test-suite batch-install pts/qmcpack-1.8.0
+	cp -R /custom-tests/* $HOME/.phoronix-test-suite/test-profiles/pts/
+	/phoronix-test-suite/phoronix-test-suite batch-install pts/vkpeak-1.2.0
+
+	/phoronix-test-suite/phoronix-test-suite diagnostics | grep -v "Operation not permitted" | tee $OUTPUT_DIR/diagnostics.txt
+	/phoronix-test-suite/phoronix-test-suite system-info | grep -v "Operation not permitted" | tee $OUTPUT_DIR/system-info.txt
+	/phoronix-test-suite/phoronix-test-suite system-sensors | grep -v "Operation not permitted" | tee $OUTPUT_DIR/system-sensors.txt
+
+	/phoronix-test-suite/phoronix-test-suite batch-run pts/qmcpack-1.8.0
+	/phoronix-test-suite/phoronix-test-suite batch-run pts/vkpeak-1.2.0
+
+	# Export Results
+	/phoronix-test-suite/phoronix-test-suite result-file-to-csv $TEST_RESULTS_NAME
+
+	echo "Submit files in $OUTPUT_DIR"
