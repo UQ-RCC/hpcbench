@@ -22,7 +22,7 @@ $ cd hpcbench
 $ apptainer build --fakeroot ../uq-benchmark.sif uq-benchmark.def 2>&1 | tee build.out
 
 RUNNING
-Examples of how to install and run the tests:
+Examples of how to install and run the tests, from the base directory:
 
 NVIDIA GPUs:
 $ apptainer run --bind ./phoronix/h100sxm:/output --bind ./phoronix/env:/phoronix-env --nv ./uq-benchmark.sif 
